@@ -29,7 +29,7 @@ export function WhyChoose() {
   return (
     <section id="why" className="bg-white py-20 sm:py-24">
       <Container>
-        <SectionHeading eyebrow="Why Al Jamal" title="Why choose our desi ghee?" description="We keep it simple: good milk, the traditional method, and the time it takes to do it right." />
+        <SectionHeading eyebrow="Why Al Jamal" title="Why choose Al Jamal pure desi ghee?" description="We keep it simple: good milk, the traditional method, and the time it takes to do it right." />
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {points.map((p) => (
             <div key={p.title} className="group rounded-3xl bg-cream p-7 ring-1 ring-line/60 transition hover:-translate-y-1 hover:shadow-card">

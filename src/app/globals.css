@@ -10,9 +10,10 @@
   --green-soft: #e4ecdf;
   --gold: #d4b24a;
   --gold-soft: #f6ecc4;
+  --gold-deep: #7a5e0e;
   --charcoal: #1f2a22;
   --ink: #3b4a3d;
-  --muted: #6b7a6c;
+  --muted: #596759;
   --line: #e6dcbd;
 }
 
@@ -24,6 +25,7 @@
   --color-green-soft: var(--green-soft);
   --color-gold: var(--gold);
   --color-gold-soft: var(--gold-soft);
+  --color-gold-deep: var(--gold-deep);
   --color-charcoal: var(--charcoal);
   --color-ink: var(--ink);
   --color-muted: var(--muted);

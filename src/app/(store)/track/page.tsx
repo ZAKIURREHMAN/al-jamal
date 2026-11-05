@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { pageMetadata } from "@/lib/seo";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 
-export const metadata: Metadata = { title: "Track Your Order", robots: { index: false } };
+export const metadata = pageMetadata({ title: "Track Your Order | Al Jamal", description: "Look up an Al Jamal order by its order number.", path: "/track", noIndex: true });
 
 async function track(formData: FormData) {
   "use server";

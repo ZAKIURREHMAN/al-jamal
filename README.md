@@ -97,6 +97,8 @@ npm run dev              # http://localhost:3000  — admin at /admin
 | `NEXT_PUBLIC_SITE_URL` | Public URL for metadata, sitemap and Open Graph |
 | `DELIVERY_CHARGE_PKR` | Flat delivery charge (default 250) |
 | `FREE_DELIVERY_THRESHOLD_PKR` | Free delivery at/above this subtotal (default 5000, 0 disables) |
+| `NEXT_PUBLIC_GA_ID` | Optional. Google Analytics 4 measurement ID (`G-…`); analytics is off when empty |
+| `GOOGLE_SITE_VERIFICATION` | Optional. Google Search Console verification token |
 
 ## API overview
 
@@ -119,6 +121,10 @@ src/lib/              db, auth, validation, orders, products, config, rate limit
 src/store/cart.ts     client cart (zustand + localStorage)
 src/proxy.ts          admin route guard
 ```
+
+## SEO
+
+Page metadata, canonicals, Open Graph and all JSON-LD (Organization, WebSite, Product/Offer, BreadcrumbList, FAQPage, Article) are built from helpers in `src/lib/seo.tsx`. FAQ and blog content live in `src/content/`; add an article there and the sitemap, schema and listing update automatically. The keyword map, content calendar and the external steps (domain, Search Console, GA4, Google Business Profile) are in [docs/seo-strategy.md](docs/seo-strategy.md). **Set `NEXT_PUBLIC_SITE_URL` to the real https domain before launch** — every canonical and sitemap URL derives from it.
 
 ## Production notes
 

@@ -11,7 +11,7 @@ import { formatDateTime, ORDER_STATUS_CLASS, ORDER_STATUS_LABEL } from "@/lib/ut
 import { storeConfig } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Order Confirmation", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Order Confirmation", robots: { index: false, follow: false }, alternates: { canonical: "/track" } };
 
 export default async function OrderPage({ params, searchParams }: PageProps<"/order/[orderNumber]">) {
   const { orderNumber } = await params;

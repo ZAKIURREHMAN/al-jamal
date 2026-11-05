@@ -12,10 +12,10 @@ import { ButtonLink } from "@/components/ui/button";
 const nav = [
   { href: "/", label: "Home" },
   { href: "/products", label: "Shop" },
-  { href: "/#story", label: "Our Story" },
-  { href: "/#how-to-use", label: "How to Use" },
-  { href: "/#faq", label: "FAQ" },
-  { href: "/#contact", label: "Contact" },
+  { href: "/about", label: "Our Story" },
+  { href: "/desi-ghee-lahore", label: "Lahore Delivery" },
+  { href: "/blog", label: "Blog" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export function Header() {
@@ -48,7 +48,7 @@ export function Header() {
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
           {nav.map((n) => {
-            const active = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href.split("#")[0]) && !n.href.includes("#");
+            const active = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
             return (
               <Link
                 key={n.href}

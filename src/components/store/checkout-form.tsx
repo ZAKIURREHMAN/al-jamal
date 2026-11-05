@@ -81,7 +81,7 @@ export function CheckoutForm({ deliveryCents, freeThresholdCents }: { deliveryCe
 
   return (
     <Container className="py-10 sm:py-14">
-      <h1 className="text-3xl font-bold text-green-deep sm:text-4xl">Checkout</h1>
+      <h2 className="text-3xl font-bold text-green-deep sm:text-4xl">Checkout</h2>
       <p className="mt-2 text-ink">Fill in your delivery details. You&apos;ll pay in cash when the order arrives.</p>
       {notice && <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200" role="status">{notice}</p>}
 

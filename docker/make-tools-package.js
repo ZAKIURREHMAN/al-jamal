@@ -1,5 +1,5 @@
-// Builds a minimal package.json containing only the packages needed to run
-// `prisma migrate deploy` and the seed inside the runtime image.
+// Builds a minimal package.json with only the packages needed inside the runtime image
+// to run `prisma migrate deploy` and the seed script (full dependency trees get installed).
 const fs = require("fs");
 const p = JSON.parse(fs.readFileSync("package.json", "utf8"));
 const keep = ["prisma", "@prisma/client", "@prisma/adapter-pg", "pg", "bcryptjs", "dotenv", "tsx"];

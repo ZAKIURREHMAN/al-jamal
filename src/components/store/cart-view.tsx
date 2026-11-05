@@ -46,7 +46,7 @@ export function CartView({ deliveryCents, freeThresholdCents }: { deliveryCents:
 
   return (
     <Container className="py-10 sm:py-14">
-      <h1 className="text-3xl font-bold text-green-deep sm:text-4xl">Your cart</h1>
+      <h2 className="text-3xl font-bold text-green-deep sm:text-4xl">Your cart</h2>
       {notice && <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200" role="status">{notice}</p>}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_380px]">

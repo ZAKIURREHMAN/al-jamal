@@ -17,7 +17,7 @@ export function Story() {
           </div>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">Our Story</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-deep">Our Story</p>
           <h2 className="mt-4 text-3xl font-bold leading-tight text-green-deep sm:text-4xl">A kitchen tradition, kept alive.</h2>
           <div className="mt-6 space-y-4 text-base leading-relaxed text-ink sm:text-lg">
             <p>
@@ -32,7 +32,7 @@ export function Story() {
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
             <ButtonLink href="/products">Shop the Range</ButtonLink>
-            <ButtonLink href="/#how-to-use" variant="ghost">How to use ghee →</ButtonLink>
+            <ButtonLink href="/about" variant="ghost">Read our full story →</ButtonLink>
           </div>
         </div>
       </Container>

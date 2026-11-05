@@ -12,7 +12,7 @@ export function Contact() {
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <a href={`https://wa.me/${c.whatsapp}`} target="_blank" rel="noreferrer" className="group rounded-3xl bg-green p-6 text-white shadow-soft transition hover:-translate-y-1">
             <MessageCircle className="h-6 w-6 text-gold" />
-            <p className="mt-4 text-xs uppercase tracking-widest text-white/70">WhatsApp</p>
+            <p className="mt-4 text-xs uppercase tracking-widest text-white/85">WhatsApp</p>
             <p className="mt-1 font-semibold">{c.phone}</p>
           </a>
           <a href={`tel:${c.phone.replace(/\s/g, "")}`} className="rounded-3xl bg-white p-6 ring-1 ring-line/60 transition hover:-translate-y-1 hover:shadow-card">

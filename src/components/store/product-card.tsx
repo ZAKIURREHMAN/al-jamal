@@ -92,7 +92,7 @@ export function ProductCard({ product, priority = false }: { product: PublicProd
 
         <div className="mt-auto flex items-center justify-between gap-3 pt-5">
           {variant ? <Price cents={variant.priceCents} className="text-lg" /> : <span className="text-sm text-muted">Unavailable</span>}
-          <Button size="sm" onClick={handleAdd} disabled={!variant?.inStock} aria-label={`Add ${product.name} ${variant?.label ?? ""} to cart`}>
+          <Button size="sm" onClick={handleAdd} disabled={!variant?.inStock} aria-label={`Add to Cart: ${product.name} ${variant?.label ?? ""}`.trim()}>
             {added ? <Check className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
             {added ? "Added" : "Add to Cart"}
           </Button>

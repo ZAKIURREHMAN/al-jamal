@@ -123,8 +123,8 @@ async function main() {
     if (existingImages === 0) {
       await db.productImage.createMany({
         data: [
-          { productId: product.id, url: `/products/${image}.webp`, alt: `${p.name} jar`, sortOrder: 0 },
-          { productId: product.id, url: `/products/${image}-detail.webp`, alt: `${p.name} texture close-up`, sortOrder: 1 },
+          { productId: product.id, url: `/products/${image}.webp`, alt: `Al Jamal ${p.name} — pure desi ghee jar`, sortOrder: 0 },
+          { productId: product.id, url: `/products/${image}-detail.webp`, alt: `Close-up of the grainy golden texture of Al Jamal ${p.name}`, sortOrder: 1 },
         ],
       });
     }
