@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(ADMIN)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reviewsReviewed Review[] @relation("ReviewedBy")
+}
+
+model Product {
+  id               String           @id @default(cuid())
+  slug             String           @unique
+  name             String
+  shortDescription String
+  description      String
+  isActive         Boolean          @default(true)
+  isFeatured       Boolean          @default(false)
+  sortOrder        Int              @default(0)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  variants ProductVariant[]
+  images   ProductImage[]
+  reviews  Review[]
+
+  @@index([isActive, isFeatured, sortOrder])
+}
+
+model ProductVariant {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label       String // e.g. "500g", "1kg"
+  weightGrams Int
+  priceCents  Int // PKR stored in paisa (integer) to avoid float errors
+  stock       Int      @default(0)
+  sku         String?  @unique
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems OrderItem[]
+
+  @@unique([productId, label])
+  @@index([productId, isActive])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId, sortOrder])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  fullName  String
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  orderNumber   String        @unique
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod @default(COD)
+
+  // Delivery snapshot (kept on the order so later customer edits don't change history)
+  fullName     String
+  phone        String
+  addressLine  String
+  city         String
+  notes        String?
+
+  subtotalCents  Int
+  deliveryCents  Int
+  totalCents     Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+
+  @@index([status, createdAt])
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id         String          @id @default(cuid())
+  orderId    String
+  order      Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId  String?
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  // Snapshot of what was bought, at the price it was bought for
+  productName   String
+  variantLabel  String
+  unitPriceCents Int
+  quantity      Int
+  lineTotalCents Int
+
+  @@index([orderId])
+  @@index([variantId])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+model Review {
+  id           String    @id @default(cuid())
+  productId    String?
+  product      Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  customerName String
+  city         String?
+  rating       Int
+  body         String
+  isApproved   Boolean   @default(false)
+  reviewedById String?
+  reviewedBy   User?     @relation("ReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([isApproved, createdAt])
+  @@index([productId])
+}

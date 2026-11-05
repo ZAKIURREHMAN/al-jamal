@@ -1,0 +1,46 @@
+# Full stack: PostgreSQL + the Next.js app (production build).
+#   docker compose up -d --build
+# App: http://localhost:3000   Admin: http://localhost:3000/admin
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: al-jamal-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aljamal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aljamal_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-al_jamal}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aljamal} -d ${POSTGRES_DB:-al_jamal}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: al-jamal-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-aljamal}:${POSTGRES_PASSWORD:-aljamal_dev_password}@db:5432/${POSTGRES_DB:-al_jamal}?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-to-a-long-random-secret-of-at-least-32-chars}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@aljamal.pk}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ChangeMe123!}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      DELIVERY_CHARGE_PKR: ${DELIVERY_CHARGE_PKR:-250}
+      FREE_DELIVERY_THRESHOLD_PKR: ${FREE_DELIVERY_THRESHOLD_PKR:-5000}
+      SEED_ON_START: ${SEED_ON_START:-true}
+    volumes:
+      - uploads:/app/public/uploads
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+volumes:
+  db_data:
+  uploads:

@@ -1,26 +1,89 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand palette */
+  --cream: #f8f0d9;
+  --cream-deep: #efe3c4;
+  --white: #ffffff;
+  --green: #3f6a3f;
+  --green-deep: #263f2c;
+  --green-soft: #e4ecdf;
+  --gold: #d4b24a;
+  --gold-soft: #f6ecc4;
+  --charcoal: #1f2a22;
+  --ink: #3b4a3d;
+  --muted: #6b7a6c;
+  --line: #e6dcbd;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-cream: var(--cream);
+  --color-cream-deep: var(--cream-deep);
+  --color-green: var(--green);
+  --color-green-deep: var(--green-deep);
+  --color-green-soft: var(--green-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-charcoal: var(--charcoal);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-playfair), Georgia, serif;
+  --radius-xl2: 1.25rem;
+  --shadow-soft: 0 10px 30px -12px rgb(31 42 36 / 0.18);
+  --shadow-card: 0 1px 2px rgb(31 42 36 / 0.04), 0 8px 24px -12px rgb(31 42 36 / 0.16);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--cream);
+  color: var(--charcoal);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+}
+
+::selection {
+  background: var(--gold-soft);
+  color: var(--green-deep);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float { animation: float 6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up, .animate-float { animation: none; }
+}
+
+/* Subtle paper texture for cream sections */
+.bg-paper {
+  background-color: var(--cream);
+  background-image:
+    radial-gradient(circle at 20% 10%, rgb(217 162 27 / 0.08), transparent 40%),
+    radial-gradient(circle at 85% 90%, rgb(47 107 63 / 0.07), transparent 45%);
+}
+
+input, textarea, select {
+  font: inherit;
 }
