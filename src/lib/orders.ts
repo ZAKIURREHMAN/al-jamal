@@ -217,12 +217,20 @@ export async function dashboardStats() {
   };
   for (const row of byStatus) counts[row.status] = row._count._all;
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
-  const deliveredSales = await db.order.aggregate({ where: { status: "DELIVERED" }, _sum: { totalCents: true } });
+  const [deliveredSales, manual] = await Promise.all([
+    db.order.aggregate({ where: { status: "DELIVERED" }, _sum: { totalCents: true } }),
+    db.manualSale.aggregate({ _sum: { amountCents: true }, _count: { _all: true } }),
+  ]);
+  const onlineSalesCents = sales._sum.totalCents ?? 0;
+  const manualSalesCents = manual._sum.amountCents ?? 0;
   return {
     totalOrders: total,
     counts,
-    totalSalesCents: sales._sum.totalCents ?? 0,
+    totalSalesCents: onlineSalesCents,
     deliveredSalesCents: deliveredSales._sum.totalCents ?? 0,
+    manualSalesCents,
+    manualSalesCount: manual._count._all,
+    combinedSalesCents: onlineSalesCents + manualSalesCents,
     recent,
   };
 }

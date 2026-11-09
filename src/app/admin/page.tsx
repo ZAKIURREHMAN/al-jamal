@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardList, Clock, CheckCircle2, Truck, XCircle, Banknote, PackageCheck } from "lucide-react";
+import { ClipboardList, Clock, CheckCircle2, Truck, XCircle, Banknote, PackageCheck, PenLine, Wallet } from "lucide-react";
 import { dashboardStats } from "@/lib/orders";
 import { formatPKR } from "@/lib/money";
 import { PageHeader, Card, Table, Th, Td } from "@/components/admin/ui";
@@ -32,12 +32,22 @@ export default async function AdminOverview() {
         ))}
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-3xl bg-green p-5 text-white shadow-soft sm:p-6">
-          <Banknote className="h-5 w-5 text-gold" />
-          <p className="mt-3 text-3xl font-bold tabular-nums">{formatPKR(stats.totalSalesCents)}</p>
-          <p className="text-xs font-medium uppercase tracking-wider text-white/70">Total sales (all orders except cancelled)</p>
+          <Wallet className="h-5 w-5 text-gold" />
+          <p className="mt-3 text-3xl font-bold tabular-nums">{formatPKR(stats.combinedSalesCents)}</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-white/85">Total sales (website + manual)</p>
         </div>
+        <Card>
+          <Banknote className="h-5 w-5 text-green" />
+          <p className="mt-3 text-3xl font-bold tabular-nums text-charcoal">{formatPKR(stats.totalSalesCents)}</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted">Website orders (except cancelled)</p>
+        </Card>
+        <Link href="/admin/sales" className="rounded-3xl bg-white p-5 ring-1 ring-line/60 transition hover:-translate-y-0.5 hover:shadow-card sm:p-6">
+          <PenLine className="h-5 w-5 text-green" />
+          <p className="mt-3 text-3xl font-bold tabular-nums text-charcoal">{formatPKR(stats.manualSalesCents)}</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted">Manual sales ({stats.manualSalesCount} entered)</p>
+        </Link>
         <Card>
           <PackageCheck className="h-5 w-5 text-green" />
           <p className="mt-3 text-3xl font-bold tabular-nums text-charcoal">{formatPKR(stats.deliveredSalesCents)}</p>

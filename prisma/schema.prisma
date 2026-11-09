@@ -36,6 +36,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   reviewsReviewed Review[] @relation("ReviewedBy")
+  manualSales     ManualSale[] @relation("ManualSalesBy")
 }
 
 model Product {
@@ -50,9 +51,10 @@ model Product {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  variants ProductVariant[]
-  images   ProductImage[]
-  reviews  Review[]
+  variants    ProductVariant[]
+  images      ProductImage[]
+  reviews     Review[]
+  manualSales ManualSale[]
 
   @@index([isActive, isFeatured, sortOrder])
 }
@@ -175,4 +177,21 @@ model Review {
 
   @@index([isApproved, createdAt])
   @@index([productId])
+}
+
+/// A sale recorded by hand (WhatsApp, phone, walk-in) with a custom price, so dashboard totals reflect all revenue.
+model ManualSale {
+  id           String   @id @default(cuid())
+  amountCents  Int
+  description  String
+  customerName String?
+  productId    String?
+  product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  quantity     Int      @default(1)
+  soldAt       DateTime @default(now())
+  createdById  String?
+  createdBy    User?    @relation("ManualSalesBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  @@index([soldAt])
 }

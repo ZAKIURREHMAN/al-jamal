@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { LayoutDashboard, Package, ClipboardList, Users, Star, LogOut, Menu, X, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Package, ClipboardList, Users, Star, LogOut, Menu, X, ExternalLink, PenLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/store/logo";
 
 const links = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/orders", label: "Orders", icon: ClipboardList },
+  { href: "/admin/sales", label: "Manual Sales", icon: PenLine },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/reviews", label: "Reviews", icon: Star },

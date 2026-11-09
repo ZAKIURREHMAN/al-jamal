@@ -16,7 +16,7 @@ export const storeConfig = {
   contact: {
     phone: "+92 303 7055259",
     whatsapp: "923037055259",
-    email: "hello@aljamal.pk",
+    email: "aljamal2031@gmail.com",
     address: "Lahore, Punjab, Pakistan",
   },
   social: {

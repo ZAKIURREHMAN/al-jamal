@@ -100,3 +100,13 @@ export const orderListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
+
+export const manualSaleInputSchema = z.object({
+  amountRupees: z.number().min(1, "Enter the amount received").max(10_000_000),
+  description: z.string().trim().min(2, "Describe what was sold").max(200),
+  customerName: z.string().trim().max(100).optional().or(z.literal("")),
+  productId: z.string().optional().nullable(),
+  quantity: z.number().int().min(1).max(1000).default(1),
+  soldAt: z.string().trim().optional().or(z.literal("")),
+});
+export type ManualSaleInput = z.infer<typeof manualSaleInputSchema>;
