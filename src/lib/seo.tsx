@@ -88,7 +88,7 @@ export function organizationJsonLd() {
       { "@type": "Country", name: "Pakistan" },
     ],
     contactPoint: [{ "@type": "ContactPoint", telephone: storeConfig.contact.phone, contactType: "customer service", areaServed: "PK", availableLanguage: ["en", "ur"] }],
-    sameAs: [storeConfig.social.facebook, storeConfig.social.instagram].filter((u) => u && !u.endsWith(".com/")),
+    sameAs: [storeConfig.social.facebook],
   };
 }
 

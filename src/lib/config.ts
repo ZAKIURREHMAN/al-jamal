@@ -20,8 +20,7 @@ export const storeConfig = {
     address: "Lahore, Punjab, Pakistan",
   },
   social: {
-    facebook: "https://facebook.com/",
-    instagram: "https://instagram.com/",
+    facebook: "https://www.facebook.com/AlJamalfood",
   },
 };
 
