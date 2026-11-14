@@ -7,20 +7,29 @@ import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+const PAGE_SIZE = 30;
 
 export default async function AdminCustomersPage({ searchParams }: PageProps<"/admin/customers">) {
-  const { q: rawQ } = await searchParams;
+  const { q: rawQ, page: rawPage } = await searchParams;
   const q = typeof rawQ === "string" ? rawQ.trim().slice(0, 100) : "";
-  const customers = await db.customer.findMany({
-    where: q ? { OR: [{ fullName: { contains: q, mode: "insensitive" } }, { phone: { contains: q.replace(/[\s-]/g, "") } }] } : undefined,
-    orderBy: { createdAt: "desc" },
-    take: 200,
-    include: { orders: { select: { totalCents: true, status: true, createdAt: true }, orderBy: { createdAt: "desc" } } },
-  });
+  const page = Math.max(1, Number(rawPage) || 1);
+  const where = q ? { OR: [{ fullName: { contains: q, mode: "insensitive" as const } }, { phone: { contains: q.replace(/[\s-]/g, "") } }] } : undefined;
+  const [total, customers] = await Promise.all([
+    db.customer.count({ where }),
+    db.customer.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: { orders: { select: { totalCents: true, status: true, createdAt: true }, orderBy: { createdAt: "desc" } } },
+    }),
+  ]);
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const link = (p: number) => `/admin/customers?${new URLSearchParams({ ...(q ? { q } : {}), page: String(p) })}`;
 
   return (
     <>
-      <PageHeader title="Customers" description={`${customers.length} customer${customers.length === 1 ? "" : "s"}`} />
+      <PageHeader title="Customers" description={`${total} customer${total === 1 ? "" : "s"}`} />
       <form className="mb-5 flex gap-3 rounded-3xl bg-white p-4 ring-1 ring-line/60" method="get">
         <Input name="q" defaultValue={q} placeholder="Search by name or phone" aria-label="Search customers" />
         <Button type="submit" variant="secondary">Search</Button>
@@ -44,6 +53,13 @@ export default async function AdminCustomersPage({ searchParams }: PageProps<"/a
           })}
         </tbody>
       </Table>
+      {pages > 1 && (
+        <nav className="mt-4 flex items-center justify-between text-sm" aria-label="Pagination">
+          <Link className={page <= 1 ? "pointer-events-none opacity-40" : "font-medium text-green-deep hover:underline"} href={link(page - 1)}>← Previous</Link>
+          <span className="text-muted">Page {page} of {pages}</span>
+          <Link className={page >= pages ? "pointer-events-none opacity-40" : "font-medium text-green-deep hover:underline"} href={link(page + 1)}>Next →</Link>
+        </nav>
+      )}
     </>
   );
 }

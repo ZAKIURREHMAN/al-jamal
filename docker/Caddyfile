@@ -1,0 +1,14 @@
+# Automatic HTTPS (Let's Encrypt) for the production domain.
+# Point the A records of al-jamal.shop and www.al-jamal.shop at this server before starting.
+al-jamal.shop {
+	encode zstd gzip
+	reverse_proxy app:3000
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+}
+
+www.al-jamal.shop {
+	redir https://al-jamal.shop{uri} permanent
+}

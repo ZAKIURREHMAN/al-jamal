@@ -4,10 +4,10 @@ node_modules
 .env
 .env.*
 !.env.example
-public/uploads/*
-!public/uploads/.gitkeep
+uploads-data
 src/generated
 npm-debug.log*
 .DS_Store
 .claude
 README.md
+backups

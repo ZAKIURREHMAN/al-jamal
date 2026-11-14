@@ -27,52 +27,55 @@ A production-ready storefront and admin dashboard for selling pure desi ghee in 
 
 ## Run with Docker (recommended)
 
-Everything (PostgreSQL + the app) runs in containers. Requires Docker Desktop.
+Everything (PostgreSQL, the app, nightly backups) runs in containers. Secrets live in `.env` (copy `.env.example` and fill in the `CHANGE_ME` values; the stack refuses to start with a missing or placeholder `AUTH_SECRET`).
 
 ```bash
 docker compose up -d --build
 ```
 
-- Store: http://localhost:3000 · Admin: http://localhost:3000/admin
-- On every start the app container applies migrations (`prisma migrate deploy`) and runs the idempotent seed (admin user + sample products). Set `SEED_ON_START=false` to skip seeding.
-- Data persists in the `db_data` volume; uploaded images in the `uploads` volume.
-- Configure secrets by copying `.env.docker.example` to `.env.docker` and running `docker compose --env-file .env.docker up -d --build`.
-
-Useful commands:
+- Store: `http://localhost:${APP_PORT}` · Admin: `/admin` (log in with `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`, then change the password in **Admin → My Account**).
+- On start the app applies migrations and runs a **first-run seed**: it creates the admin account and sample products only on an empty database. It never overwrites products you edited or deleted, and never resets a password.
+- Data lives in named volumes: `db_data` (database) and `uploads` (product images uploaded in the admin, served at `/uploads/...`).
+- The database port is bound to `127.0.0.1` only.
 
 ```bash
-docker compose logs -f app        # app logs
-docker compose down               # stop (keeps data)
-docker compose down -v            # stop and delete database + uploads
-docker compose exec db psql -U aljamal -d al_jamal   # open a SQL shell
+docker compose logs -f app          # app logs
+docker compose down                 # stop (keeps data)
+npm run test:smoke                  # end-to-end check against the running stack
 ```
 
-**Database only** (run the app on the host with `npm run dev`):
+### Go live on al-jamal.shop
+
+1. Point the DNS **A records** of `al-jamal.shop` and `www.al-jamal.shop` at your server, and open ports 80 and 443.
+2. Copy the project and your `.env` to the server. Keep `NEXT_PUBLIC_SITE_URL="https://al-jamal.shop"`.
+3. Start with the production profile, which adds Caddy (automatic HTTPS, `www` → bare domain redirect):
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d
-# .env: DATABASE_URL="postgresql://aljamal:aljamal_dev_password@localhost:5433/al_jamal?schema=public"
+docker compose --profile prod up -d --build
 ```
+
+4. In Google Search Console add the property, put the token in `GOOGLE_SITE_VERIFICATION`, and submit `https://al-jamal.shop/sitemap.xml`. Add `NEXT_PUBLIC_GA_ID` for Analytics. Rebuild after changing either.
+
+### Backups
+
+The `backup` service writes a compressed dump to `./backups` every 24 hours and keeps 14 days. Copy that folder off the server regularly. Restore with:
+
+```bash
+gunzip -c backups/<file>.sql.gz | docker compose exec -T db psql -U aljamal -d al_jamal
+```
+
+### Email alerts (optional)
+
+Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` in `.env` (for Gmail: `smtp.gmail.com`, `465`, your address and an App Password) to receive an email for every new order, contact message and review. The address is set in **Admin → Settings**.
 
 ## Getting started (without Docker)
 
 ```bash
-# 1. PostgreSQL (macOS / Homebrew)
-brew install postgresql@17
-brew services start postgresql@17
-createdb al_jamal
-
-# 2. Configure
-cp .env.example .env     # set DATABASE_URL, AUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
-
-# 3. Install, migrate, seed
+cp .env.example .env     # point DATABASE_URL at your PostgreSQL
 npm install
-npm run db:migrate       # applies prisma/migrations (creates one if the schema changed)
-npm run db:seed          # admin user + sample products
-npm run images:build     # (optional) regenerate product/hero/OG images in /public
-
-# 4. Run
-npm run dev              # http://localhost:3000  — admin at /admin
+npm run db:migrate
+npm run db:seed          # first-run only: admin + sample products
+npm run dev
 ```
 
 ## Scripts
@@ -86,19 +89,22 @@ npm run dev              # http://localhost:3000  — admin at /admin
 | `npm run db:studio` | Prisma Studio |
 | `npm run images:build` | Render brand product images with sharp |
 | `npm run typecheck` / `lint` | Quality checks |
+| `npm test` | Unit tests (vitest) |
+| `npm run test:smoke` | End-to-end smoke test against a running stack |
 
 ## Environment variables
 
 | Name | Description |
 | --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string |
-| `AUTH_SECRET` | ≥32-char secret for signing admin sessions |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Used only by the seed to create the admin account |
-| `NEXT_PUBLIC_SITE_URL` | Public URL for metadata, sitemap and Open Graph |
-| `DELIVERY_CHARGE_PKR` | Flat delivery charge (default 250) |
-| `FREE_DELIVERY_THRESHOLD_PKR` | Free delivery at/above this subtotal (default 5000, 0 disables) |
-| `NEXT_PUBLIC_GA_ID` | Optional. Google Analytics 4 measurement ID (`G-…`); analytics is off when empty |
-| `GOOGLE_SITE_VERIFICATION` | Optional. Google Search Console verification token |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` | Database container credentials and the localhost port |
+| `DATABASE_URL` | Connection string used by `npm run dev`, Prisma CLI and scripts on the host |
+| `AUTH_SECRET` | ≥32-char random secret that signs admin sessions and order-access cookies |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Used once to create the first admin on an empty database |
+| `NEXT_PUBLIC_SITE_URL` | Canonical site URL (`https://al-jamal.shop`); baked in at build time |
+| `APP_PORT` | Host port for the app container |
+| `DELIVERY_CHARGE_PKR`, `FREE_DELIVERY_THRESHOLD_PKR` | Initial delivery defaults; afterwards edit them in Admin → Settings |
+| `NEXT_PUBLIC_GA_ID`, `GOOGLE_SITE_VERIFICATION` | Optional analytics and Search Console |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | Optional email alerts |
 
 ## API overview
 
@@ -129,6 +135,8 @@ Page metadata, canonicals, Open Graph and all JSON-LD (Organization, WebSite, Pr
 ## Production notes
 
 - Set a strong `AUTH_SECRET` and change the admin password after first login (re-run the seed with new env values or update via SQL).
-- Store contact details and social links live in `src/lib/config.ts`.
-- Uploaded images are written to `public/uploads`; mount persistent storage or swap for object storage when deploying to ephemeral hosts.
-- The in-memory rate limiter is per-instance; use Redis when running multiple instances.
+- Contact details, delivery charges and alert thresholds are edited in **Admin → Settings** (no rebuild).
+- Uploaded images are stored in the `uploads` volume and served by `/uploads/[name]`.
+- Rate limits are stored in PostgreSQL, so they survive restarts and are shared across instances.
+- Order pages show personal details only to the browser that placed the order or after the matching phone number is entered.
+- All times are shown in Pakistan time (Asia/Karachi).

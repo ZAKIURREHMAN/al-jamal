@@ -36,6 +36,8 @@ export function Header() {
   }, []);
 
 
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
+
   return (
     <header
       className={cn(
@@ -48,14 +50,17 @@ export function Header() {
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
           {nav.map((n) => {
-            const active = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
+            const active = isActive(n.href);
             return (
               <Link
                 key={n.href}
                 href={n.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "rounded-full px-4 py-2 text-sm font-medium transition hover:bg-green-soft hover:text-green-deep",
-                  active ? "text-green-deep" : "text-ink",
+                  "relative rounded-full px-4 py-2 text-sm transition",
+                  active
+                    ? "bg-green text-white font-semibold shadow-soft"
+                    : "font-medium text-ink hover:bg-green-soft hover:text-green-deep",
                 )}
               >
                 {n.label}
@@ -101,7 +106,12 @@ export function Header() {
       >
         <nav className="flex flex-col px-4 py-3" aria-label="Mobile">
           {nav.map((n) => (
-            <Link key={n.href} href={n.href} className="rounded-xl px-3 py-3 text-base font-medium text-ink hover:bg-green-soft hover:text-green-deep">
+            <Link
+              key={n.href}
+              href={n.href}
+              aria-current={isActive(n.href) ? "page" : undefined}
+              className={cn("rounded-xl px-3 py-3 text-base", isActive(n.href) ? "bg-green font-semibold text-white" : "font-medium text-ink hover:bg-green-soft hover:text-green-deep")}
+            >
               {n.label}
             </Link>
           ))}

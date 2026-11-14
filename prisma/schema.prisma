@@ -32,11 +32,14 @@ model User {
   passwordHash String
   role         Role     @default(ADMIN)
   isActive     Boolean  @default(true)
+  /// Incremented to invalidate every existing session for this user ("sign out everywhere").
+  tokenVersion Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   reviewsReviewed Review[] @relation("ReviewedBy")
   manualSales     ManualSale[] @relation("ManualSalesBy")
+  auditLogs       AuditLog[]
 }
 
 model Product {
@@ -73,7 +76,8 @@ model ProductVariant {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  orderItems OrderItem[]
+  orderItems  OrderItem[]
+  manualSales ManualSale[]
 
   @@unique([productId, label])
   @@index([productId, isActive])
@@ -187,11 +191,59 @@ model ManualSale {
   customerName String?
   productId    String?
   product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variantId    String?
+  variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   quantity     Int      @default(1)
+  /// True when this sale reduced the variant's stock (restored if the sale is deleted).
+  stockDeducted Boolean @default(false)
   soldAt       DateTime @default(now())
   createdById  String?
   createdBy    User?    @relation("ManualSalesBy", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt    DateTime @default(now())
 
   @@index([soldAt])
+}
+
+/// Editable store settings (contact details, delivery charges, thresholds). One row per key.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+/// Who changed what in the admin.
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userEmail String
+  action    String
+  entity    String
+  entityId  String?
+  summary   String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+}
+
+/// Messages sent through the contact form.
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([isRead, createdAt])
+}
+
+/// Database-backed rate limiting so limits survive restarts and work across instances.
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
 }

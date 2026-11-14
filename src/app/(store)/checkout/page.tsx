@@ -1,14 +1,15 @@
 import { CheckoutForm } from "@/components/store/checkout-form";
-import { storeConfig } from "@/lib/config";
+import { getSettings, ratesOf } from "@/lib/settings";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({ title: "Checkout | Al Jamal", description: "Enter your delivery details and pay cash on delivery.", path: "/checkout", noIndex: true });
 
-export default function CheckoutPage() {
+export default async function CheckoutPage() {
+  const settings = await getSettings();
   return (
     <>
       <h1 className="sr-only">Checkout</h1>
-      <CheckoutForm deliveryCents={storeConfig.deliveryCents()} freeThresholdCents={storeConfig.freeDeliveryThresholdCents()} />
+      <CheckoutForm rates={ratesOf(settings)} />
     </>
   );
 }

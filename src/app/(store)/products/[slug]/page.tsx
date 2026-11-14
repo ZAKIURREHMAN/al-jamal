@@ -5,8 +5,10 @@ import { Container } from "@/components/ui/container";
 import { ProductDetail } from "@/components/store/product-detail";
 import { ProductGrid } from "@/components/store/product-grid";
 import { FaqList } from "@/components/store/faq-list";
-import { getPublicProductBySlug, listPublicProducts } from "@/lib/products";
-import { storeConfig } from "@/lib/config";
+import { getPublicProductBySlug, listProductReviews, listPublicProducts } from "@/lib/products";
+import { ProductReviews } from "@/components/store/product-reviews";
+import { Suspense } from "react";
+import { getSettings, ratesOf } from "@/lib/settings";
 import { centsToRupees } from "@/lib/money";
 import { JsonLd, absoluteUrl, breadcrumbJsonLd, faqJsonLd, pageMetadata, SEO } from "@/lib/seo";
 import { productFaqsFor } from "@/content/faqs";
@@ -40,8 +42,10 @@ export default async function ProductPage({ params }: Props) {
   const product = await getPublicProductBySlug(slug);
   if (!product) notFound();
 
+  const settings = await getSettings();
   const related = (await listPublicProducts()).filter((p) => p.id !== product.id).slice(0, 4);
   const faqs = productFaqsFor(product.slug);
+  const { reviews, average, count } = await listProductReviews(product.slug);
   const guides = articles.filter((a) => a.related.includes(product.slug)).slice(0, 3);
 
   const productJsonLd = {
@@ -53,6 +57,8 @@ export default async function ProductPage({ params }: Props) {
     image: product.images.map((i) => absoluteUrl(i.url)),
     brand: { "@type": "Brand", name: SEO.brand },
     category: "Ghee",
+    // Only emitted when genuine, approved customer reviews exist.
+    ...(count > 0 && average !== null ? { aggregateRating: { "@type": "AggregateRating", ratingValue: average, reviewCount: count } } : {}),
     url: absoluteUrl(`/products/${product.slug}`),
     offers: product.variants.map((v) => ({
       "@type": "Offer",
@@ -72,7 +78,15 @@ export default async function ProductPage({ params }: Props) {
     <>
       <section className="bg-cream py-10 sm:py-14">
         <Container>
-          <ProductDetail product={product} deliveryCents={storeConfig.deliveryCents()} freeThresholdCents={storeConfig.freeDeliveryThresholdCents()} />
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-3xl bg-white" />}>
+            <ProductDetail product={product} rates={ratesOf(settings)} whatsapp={settings.whatsapp} />
+          </Suspense>
+        </Container>
+      </section>
+
+      <section className="bg-white pt-16">
+        <Container className="max-w-4xl">
+          <ProductReviews slug={product.slug} productName={product.name} reviews={reviews} average={average} count={count} />
         </Container>
       </section>
 

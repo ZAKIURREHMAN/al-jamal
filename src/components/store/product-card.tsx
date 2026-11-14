@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/store/cart";
 import { useToast } from "@/components/ui/toast";
+import { useUi } from "@/store/ui";
 import { cn } from "@/lib/utils";
 
 export function ProductCard({ product, priority = false }: { product: PublicProduct; priority?: boolean }) {
@@ -18,6 +19,7 @@ export function ProductCard({ product, priority = false }: { product: PublicProd
   const variant = product.variants.find((v) => v.id === variantId) ?? product.variants[0];
   const add = useCart((s) => s.add);
   const toast = useToast((s) => s.push);
+  const openCart = useUi((s) => s.openCart);
   const [added, setAdded] = useState(false);
   const image = product.images[0];
 
@@ -34,7 +36,7 @@ export function ProductCard({ product, priority = false }: { product: PublicProd
       maxStock: variant.stock,
     });
     if (res.ok) {
-      toast(`${product.name} (${variant.label}) added to your cart.`);
+      openCart();
       setAdded(true);
       setTimeout(() => setAdded(false), 1500);
     } else {

@@ -2,13 +2,7 @@ export function cn(...classes: Array<string | false | null | undefined>): string
   return classes.filter(Boolean).join(" ");
 }
 
-export function formatDate(d: Date | string): string {
-  return new Date(d).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" });
-}
-
-export function formatDateTime(d: Date | string): string {
-  return new Date(d).toLocaleString("en-PK", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
-}
+export { formatDate, formatDateTime } from "./time";
 
 export const ORDER_STATUS_LABEL: Record<string, string> = {
   PENDING: "Pending",

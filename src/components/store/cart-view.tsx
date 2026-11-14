@@ -8,13 +8,9 @@ import { Container } from "@/components/ui/container";
 import { ButtonLink } from "@/components/ui/button";
 import { cartSubtotal, useCart, MAX_PER_LINE } from "@/store/cart";
 import { formatPKR } from "@/lib/money";
+import type { DeliveryRates } from "@/lib/delivery";
 
-export function computeDeliveryClient(subtotal: number, deliveryCents: number, freeThresholdCents: number) {
-  if (freeThresholdCents > 0 && subtotal >= freeThresholdCents) return 0;
-  return deliveryCents;
-}
-
-export function CartView({ deliveryCents, freeThresholdCents }: { deliveryCents: number; freeThresholdCents: number }) {
+export function CartView({ rates }: { rates: DeliveryRates }) {
   const { items, hydrated, setQuantity, remove, sync } = useCart();
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -23,9 +19,10 @@ export function CartView({ deliveryCents, freeThresholdCents }: { deliveryCents:
   }, [hydrated, sync]);
 
   const subtotal = cartSubtotal(items);
-  const delivery = computeDeliveryClient(subtotal, deliveryCents, freeThresholdCents);
-  const total = subtotal + delivery;
-  const toFree = freeThresholdCents > 0 ? freeThresholdCents - subtotal : 0;
+  const freeCents = rates.freeThreshold * 100;
+  const isFree = freeCents > 0 && subtotal >= freeCents;
+  const toFree = freeCents > 0 ? freeCents - subtotal : 0;
+  const sameRate = rates.lahore === rates.other;
 
   if (!hydrated) {
     return (
@@ -81,9 +78,14 @@ export function CartView({ deliveryCents, freeThresholdCents }: { deliveryCents:
           <h2 className="text-xl font-bold text-green-deep">Order summary</h2>
           <dl className="mt-5 space-y-3 text-sm">
             <div className="flex justify-between"><dt className="text-ink">Subtotal</dt><dd className="font-semibold tabular-nums">{formatPKR(subtotal)}</dd></div>
-            <div className="flex justify-between"><dt className="text-ink">Delivery</dt><dd className="font-semibold tabular-nums">{delivery === 0 ? <span className="text-green">Free</span> : formatPKR(delivery)}</dd></div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-ink">Delivery</dt>
+              <dd className="text-right font-semibold tabular-nums">
+                {isFree ? <span className="text-green">Free</span> : sameRate ? formatPKR(rates.lahore * 100) : <span className="font-medium">Lahore {formatPKR(rates.lahore * 100)} · other cities {formatPKR(rates.other * 100)}</span>}
+              </dd>
+            </div>
             {toFree > 0 && <p className="rounded-xl bg-gold-soft px-3 py-2 text-xs text-charcoal">Add {formatPKR(toFree)} more for free delivery.</p>}
-            <div className="flex justify-between border-t border-line pt-3 text-base"><dt className="font-bold text-charcoal">Total</dt><dd className="font-bold tabular-nums text-green-deep">{formatPKR(total)}</dd></div>
+            <div className="flex justify-between border-t border-line pt-3 text-base"><dt className="font-bold text-charcoal">{isFree || sameRate ? "Total" : "Subtotal before delivery"}</dt><dd className="font-bold tabular-nums text-green-deep">{formatPKR(subtotal + (isFree ? 0 : sameRate ? rates.lahore * 100 : 0))}</dd></div>
           </dl>
           <p className="mt-4 text-xs text-muted">Pay in cash when your order arrives. No advance payment needed.</p>
           <ButtonLink href="/checkout" size="lg" className="mt-6 w-full">Proceed to Checkout <ArrowRight className="h-4 w-4" /></ButtonLink>

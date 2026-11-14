@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getSession } from "@/lib/auth";
 import { AdminShell } from "@/components/admin/shell";
 import { Toaster } from "@/components/ui/toast";
+import { adminBadges } from "@/lib/orders";
 
 export const metadata: Metadata = { title: "Admin", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -17,8 +18,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </>
     );
   }
+  const badges = await adminBadges();
   return (
-    <AdminShell user={{ name: session.name, email: session.email }}>
+    <AdminShell user={{ name: session.name, email: session.email, role: session.role }} badges={badges}>
       {children}
       <Toaster />
     </AdminShell>

@@ -11,14 +11,17 @@ import { formatPKR } from "@/lib/money";
 import { useToast } from "@/components/ui/toast";
 import { manualSaleInputSchema } from "@/lib/validation";
 
-type Sale = { id: string; amountCents: number; description: string; customerName: string | null; productName: string | null; quantity: number; soldAt: string; enteredBy: string | null };
+type Sale = { id: string; amountCents: number; description: string; customerName: string | null; productName: string | null; quantity: number; stockDeducted: boolean; soldAt: string; enteredBy: string | null };
+type ProductOpt = { id: string; name: string; variants: { id: string; label: string; stock: number }[] };
 
-const today = () => new Date().toISOString().slice(0, 10);
+/** Today in Pakistan time as YYYY-MM-DD. */
+const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
 
-export function ManualSalesManager({ sales, products }: { sales: Sale[]; products: { id: string; name: string }[] }) {
+export function ManualSalesManager({ sales, products }: { sales: Sale[]; products: ProductOpt[] }) {
   const router = useRouter();
   const toast = useToast((s) => s.push);
-  const [form, setForm] = useState({ amountRupees: "", description: "", customerName: "", productId: "", quantity: "1", soldAt: today() });
+  const [form, setForm] = useState({ amountRupees: "", description: "", customerName: "", variantId: "", quantity: "1", soldAt: today() });
+  const [deductStock, setDeductStock] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
@@ -33,7 +36,8 @@ export function ManualSalesManager({ sales, products }: { sales: Sale[]; product
       amountRupees: Number(form.amountRupees),
       description: form.description,
       customerName: form.customerName,
-      productId: form.productId || null,
+      variantId: form.variantId || null,
+      deductStock: Boolean(form.variantId) && deductStock,
       quantity: Number(form.quantity) || 1,
       soldAt: form.soldAt,
     });
@@ -47,7 +51,7 @@ export function ManualSalesManager({ sales, products }: { sales: Sale[]; product
     try {
       await apiFetch("/api/admin/manual-sales", { method: "POST", body: JSON.stringify(parsed.data) });
       toast(`Sale of ${formatPKR(parsed.data.amountRupees * 100)} recorded.`);
-      setForm({ amountRupees: "", description: "", customerName: "", productId: "", quantity: "1", soldAt: today() });
+      setForm({ amountRupees: "", description: "", customerName: "", variantId: "", quantity: "1", soldAt: today() });
       router.refresh();
     } catch (err) {
       toast((err as Error).message, "error");
@@ -78,10 +82,14 @@ export function ManualSalesManager({ sales, products }: { sales: Sale[]; product
           <Field label="What was sold" htmlFor="ms-desc" error={errors.description} className="sm:col-span-2 lg:col-span-2">
             <Input id="ms-desc" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="e.g. 1kg cow ghee, WhatsApp order, discounted" aria-invalid={!!errors.description} />
           </Field>
-          <Field label="Product (optional)" htmlFor="ms-product">
-            <Select id="ms-product" value={form.productId} onChange={(e) => set("productId", e.target.value)}>
+          <Field label="Product & weight (optional)" htmlFor="ms-product">
+            <Select id="ms-product" value={form.variantId} onChange={(e) => set("variantId", e.target.value)}>
               <option value="">Not linked to a product</option>
-              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {products.map((p) => (
+                <optgroup key={p.id} label={p.name}>
+                  {p.variants.map((v) => <option key={v.id} value={v.id}>{p.name} — {v.label} ({v.stock} in stock)</option>)}
+                </optgroup>
+              ))}
             </Select>
           </Field>
           <Field label="Quantity" htmlFor="ms-qty" error={errors.quantity}>
@@ -94,8 +102,11 @@ export function ManualSalesManager({ sales, products }: { sales: Sale[]; product
             <Input id="ms-customer" value={form.customerName} onChange={(e) => set("customerName", e.target.value)} placeholder="e.g. Ahmed, Gulberg" />
           </Field>
           <div className="flex items-end"><Button type="submit" disabled={busy} className="w-full">{busy ? "Saving…" : "Save sale"}</Button></div>
+          <label className={`flex items-center gap-2.5 text-sm sm:col-span-2 lg:col-span-3 ${form.variantId ? "text-ink" : "text-muted"}`}>
+            <input type="checkbox" checked={Boolean(form.variantId) && deductStock} disabled={!form.variantId} onChange={(e) => setDeductStock(e.target.checked)} className="h-4 w-4 accent-green" />
+            Deduct this quantity from stock {form.variantId ? "(returned automatically if you delete the sale)" : "— choose a product and weight first"}
+          </label>
         </form>
-        <p className="mt-3 text-xs text-muted">Manual sales do not change product stock. Adjust stock on the product page if needed.</p>
       </Card>
 
       <Table>
@@ -107,7 +118,7 @@ export function ManualSalesManager({ sales, products }: { sales: Sale[]; product
               <Td className="text-muted">{formatDate(s.soldAt)}</Td>
               <Td className="font-medium">{s.description}</Td>
               <Td>{s.productName ?? <span className="text-muted">—</span>}</Td>
-              <Td>{s.quantity}</Td>
+              <Td>{s.quantity}{s.stockDeducted && <span className="ml-1.5 rounded-full bg-green-soft px-1.5 py-0.5 text-[10px] font-semibold text-green-deep" title="Deducted from stock">stock</span>}</Td>
               <Td>{s.customerName ?? <span className="text-muted">—</span>}</Td>
               <Td className="tabular-nums font-semibold text-green-deep">{formatPKR(s.amountCents)}</Td>
               <Td className="text-right"><button onClick={() => remove(s)} className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"><Trash2 className="h-3.5 w-3.5" /> Delete</button></Td>

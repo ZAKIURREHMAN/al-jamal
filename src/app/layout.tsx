@@ -4,9 +4,13 @@ import "./globals.css";
 import { storeConfig } from "@/lib/config";
 import { JsonLd, organizationJsonLd, SEO, websiteJsonLd } from "@/lib/seo";
 import { Analytics } from "@/components/analytics";
+import { getSettings } from "@/lib/settings";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], display: "swap" });
+
+// Contact details and delivery settings are editable at runtime, so nothing is frozen at build time.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   metadataBase: new URL(storeConfig.siteUrl),
@@ -35,12 +39,13 @@ export const metadata: Metadata = {
   formatDetection: { telephone: true },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const settings = await getSettings();
   return (
     <html lang="en-PK" className={`${inter.variable} ${playfair.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
-        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
+        <JsonLd data={[organizationJsonLd(settings), websiteJsonLd()]} />
         <Analytics />
       </body>
     </html>

@@ -3,11 +3,11 @@ import fs from "node:fs/promises";
 import sharp, { type Metadata } from "sharp";
 import { ApiError, handle, ok } from "@/lib/api";
 import { requireAdmin } from "@/lib/auth";
+import { UPLOAD_DIR } from "@/lib/uploads";
 
 export const dynamic = "force-dynamic";
 
 const MAX_BYTES = 6 * 1024 * 1024;
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 
 /** Accepts an image file, verifies it is a real image, re-encodes it to WebP (strips metadata) and stores it. */
 export const POST = handle(async (req: Request) => {

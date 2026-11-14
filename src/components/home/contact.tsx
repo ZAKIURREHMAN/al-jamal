@@ -1,10 +1,10 @@
 import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { storeConfig } from "@/lib/config";
+import { getSettings } from "@/lib/settings";
 
-export function Contact() {
-  const c = storeConfig.contact;
+export async function Contact() {
+  const c = await getSettings();
   return (
     <section id="contact" className="scroll-mt-20 bg-paper py-20 sm:py-24">
       <Container>

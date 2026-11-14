@@ -9,7 +9,7 @@ import { FaqList } from "@/components/store/faq-list";
 import { listPublicProducts } from "@/lib/products";
 import { JsonLd, breadcrumbJsonLd, faqJsonLd, pageMetadata } from "@/lib/seo";
 import { lahoreFaqs } from "@/content/faqs";
-import { storeConfig } from "@/lib/config";
+import { getSettings } from "@/lib/settings";
 import { formatPKR } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
@@ -27,9 +27,10 @@ async function LahoreProducts() {
   return <ProductGrid products={products} />;
 }
 
-export default function LahorePage() {
-  const delivery = storeConfig.deliveryCents();
-  const free = storeConfig.freeDeliveryThresholdCents();
+export default async function LahorePage() {
+  const settings = await getSettings();
+  const delivery = settings.deliveryLahore * 100;
+  const free = settings.freeDeliveryThreshold * 100;
   return (
     <>
       <section className="bg-paper py-14 sm:py-20">
@@ -44,7 +45,7 @@ export default function LahorePage() {
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
             <ButtonLink href="/products">Shop desi ghee</ButtonLink>
-            <ButtonLink href={`https://wa.me/${storeConfig.contact.whatsapp}`} variant="secondary">WhatsApp us</ButtonLink>
+            <ButtonLink href={`https://wa.me/${settings.whatsapp}`} variant="secondary">WhatsApp us</ButtonLink>
           </div>
         </Container>
       </section>

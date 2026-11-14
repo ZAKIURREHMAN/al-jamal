@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export const POST = handle(async (req: Request) => {
   const ip = clientIp(req);
-  const limit = rateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
+  const limit = await rateLimit(`login:${ip}`, 8, 15 * 60 * 1000);
   if (!limit.ok) {
     throw new ApiError(429, `Too many login attempts. Try again in ${Math.ceil(limit.retryAfterSec / 60)} minutes.`);
   }
@@ -28,7 +28,7 @@ export const POST = handle(async (req: Request) => {
     throw new ApiError(401, "Invalid email or password");
   }
 
-  const token = await createSessionToken({ sub: user.id, email: user.email, name: user.name, role: user.role });
+  const token = await createSessionToken({ sub: user.id, email: user.email, name: user.name, role: user.role, ver: user.tokenVersion });
   const res = NextResponse.json({ data: { email: user.email, name: user.name, role: user.role } });
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
   logger.info("Admin login", { email: user.email });

@@ -11,14 +11,29 @@ import { cartSubtotal, useCart } from "@/store/cart";
 import { formatPKR } from "@/lib/money";
 import { checkoutSchema } from "@/lib/validation";
 import { apiFetch } from "@/lib/utils";
-import { computeDeliveryClient } from "./cart-view";
+import { deliveryCents as deliveryFor, type DeliveryRates } from "@/lib/delivery";
 
 type Errors = Partial<Record<"fullName" | "phone" | "addressLine" | "city" | "notes" | "items", string>>;
 
-export function CheckoutForm({ deliveryCents, freeThresholdCents }: { deliveryCents: number; freeThresholdCents: number }) {
+const SAVED_KEY = "aj-checkout-details-v1";
+
+export function CheckoutForm({ rates }: { rates: DeliveryRates }) {
   const router = useRouter();
   const { items, hydrated, sync, clear } = useCart();
-  const [form, setForm] = useState({ fullName: "", phone: "", addressLine: "", city: "", notes: "" });
+  // Returning customers: start from the details saved on this device. (Nothing is rendered until the
+  // cart has hydrated on the client, so reading localStorage here cannot cause a hydration mismatch.)
+  const [form, setForm] = useState(() => {
+    const blank = { fullName: "", phone: "", addressLine: "", city: "", notes: "" };
+    if (typeof window === "undefined") return blank;
+    try {
+      const saved = JSON.parse(localStorage.getItem(SAVED_KEY) ?? "null");
+      return saved && typeof saved === "object" ? { ...blank, fullName: saved.fullName ?? "", phone: saved.phone ?? "", addressLine: saved.addressLine ?? "", city: saved.city ?? "" } : blank;
+    } catch {
+      return blank;
+    }
+  });
+  const [website, setWebsite] = useState(""); // honeypot
+  const [remember, setRemember] = useState(true);
   const [errors, setErrors] = useState<Errors>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -28,8 +43,10 @@ export function CheckoutForm({ deliveryCents, freeThresholdCents }: { deliveryCe
     if (hydrated) sync().then(setNotice);
   }, [hydrated, sync]);
 
+
   const subtotal = cartSubtotal(items);
-  const delivery = computeDeliveryClient(subtotal, deliveryCents, freeThresholdCents);
+  const cityKnown = form.city.trim().length >= 2;
+  const delivery = deliveryFor(subtotal, form.city, rates);
   const total = subtotal + delivery;
 
   function update(k: keyof typeof form, v: string) {
@@ -40,7 +57,7 @@ export function CheckoutForm({ deliveryCents, freeThresholdCents }: { deliveryCe
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setServerError(null);
-    const payload = { ...form, items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })) };
+    const payload = { ...form, website, items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })) };
     const parsed = checkoutSchema.safeParse(payload);
     if (!parsed.success) {
       const fieldErrors = parsed.error.flatten().fieldErrors;
@@ -53,6 +70,10 @@ export function CheckoutForm({ deliveryCents, freeThresholdCents }: { deliveryCe
     setSubmitting(true);
     try {
       const order = await apiFetch<{ orderNumber: string }>("/api/orders", { method: "POST", body: JSON.stringify(parsed.data) });
+      try {
+        if (remember) localStorage.setItem(SAVED_KEY, JSON.stringify({ fullName: parsed.data.fullName, phone: parsed.data.phone, addressLine: parsed.data.addressLine, city: parsed.data.city }));
+        else localStorage.removeItem(SAVED_KEY);
+      } catch { /* ignore */ }
       clear();
       router.push(`/order/${order.orderNumber}?placed=1`);
     } catch (err) {
@@ -105,6 +126,15 @@ export function CheckoutForm({ deliveryCents, freeThresholdCents }: { deliveryCe
               <Field label="Order notes (optional)" htmlFor="notes" error={errors.notes} className="sm:col-span-2">
                 <Textarea id="notes" name="notes" value={form.notes} onChange={(e) => update("notes", e.target.value)} placeholder="Delivery timing, gate instructions, etc." className="min-h-[72px]" />
               </Field>
+              {/* Honeypot: hidden from people, irresistible to bots */}
+              <div className="hidden" aria-hidden="true">
+                <label htmlFor="website">Website</label>
+                <input id="website" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
+              </div>
+              <label className="flex items-center gap-2.5 text-sm text-ink sm:col-span-2">
+                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-4 w-4 accent-green" />
+                Remember my details on this device for next time
+              </label>
             </div>
           </section>
 
@@ -138,7 +168,8 @@ export function CheckoutForm({ deliveryCents, freeThresholdCents }: { deliveryCe
           </ul>
           <dl className="mt-4 space-y-2.5 border-t border-line pt-4 text-sm">
             <div className="flex justify-between"><dt className="text-ink">Subtotal</dt><dd className="tabular-nums">{formatPKR(subtotal)}</dd></div>
-            <div className="flex justify-between"><dt className="text-ink">Delivery charges</dt><dd className="tabular-nums">{delivery === 0 ? <span className="text-green">Free</span> : formatPKR(delivery)}</dd></div>
+            <div className="flex justify-between"><dt className="text-ink">Delivery charges{cityKnown ? ` (${form.city.trim()})` : ""}</dt><dd className="tabular-nums">{delivery === 0 ? <span className="text-green">Free</span> : formatPKR(delivery)}</dd></div>
+            {!cityKnown && rates.lahore !== rates.other && <p className="text-xs text-muted">Enter your city to see the exact delivery charge.</p>}
             <div className="flex justify-between border-t border-line pt-3 text-base"><dt className="font-bold">Payable on delivery</dt><dd className="font-bold tabular-nums text-green-deep">{formatPKR(total)}</dd></div>
           </dl>
           {serverError && <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200" role="alert">{serverError}</p>}

@@ -83,52 +83,43 @@ const products = [
   },
 ];
 
+/**
+ * First-run seed. It never overwrites anything:
+ *  - the admin account is created only when no user exists (your password is never reset);
+ *  - sample products are created only when the catalogue is completely empty
+ *    (edits and deletions made in the admin are never undone).
+ */
 async function main() {
-  const email = process.env.ADMIN_EMAIL ?? "admin@example.com";
-  const password = process.env.ADMIN_PASSWORD ?? "ChangeMe123!";
-  const passwordHash = await bcrypt.hash(password, 12);
+  const userCount = await db.user.count();
+  if (userCount === 0) {
+    const email = (process.env.ADMIN_EMAIL ?? "admin@example.com").toLowerCase();
+    const password = process.env.ADMIN_PASSWORD;
+    if (!password || password.length < 10) throw new Error("Set ADMIN_PASSWORD (at least 10 characters) to create the first admin account");
+    await db.user.create({ data: { email, name: "Store Admin", passwordHash: await bcrypt.hash(password, 12), role: "ADMIN" } });
+    console.log(`Admin user created: ${email}`);
+  } else {
+    console.log("Admin user already exists — left unchanged");
+  }
 
-  await db.user.upsert({
-    where: { email },
-    update: { passwordHash, isActive: true },
-    create: { email, name: "Store Admin", passwordHash, role: "ADMIN" },
-  });
-  console.log(`Admin user ready: ${email}`);
+  const productCount = await db.product.count();
+  if (productCount > 0) {
+    console.log(`Catalogue already has ${productCount} product(s) — sample products not re-seeded`);
+    return;
+  }
 
   for (const p of products) {
     const { variants, image, ...data } = p;
-    const product = await db.product.upsert({
-      where: { slug: p.slug },
-      update: { ...data },
-      create: { ...data },
+    const product = await db.product.create({ data: { ...data } });
+    await db.productVariant.createMany({
+      data: variants.map((v, i) => ({ productId: product.id, label: v.label, weightGrams: v.weightGrams, priceCents: rs(v.priceRupees), stock: v.stock, sku: v.sku, sortOrder: i })),
     });
-
-    for (const [i, v] of variants.entries()) {
-      await db.productVariant.upsert({
-        where: { productId_label: { productId: product.id, label: v.label } },
-        update: { weightGrams: v.weightGrams, priceCents: rs(v.priceRupees), sku: v.sku, sortOrder: i },
-        create: {
-          productId: product.id,
-          label: v.label,
-          weightGrams: v.weightGrams,
-          priceCents: rs(v.priceRupees),
-          stock: v.stock,
-          sku: v.sku,
-          sortOrder: i,
-        },
-      });
-    }
-
-    const existingImages = await db.productImage.count({ where: { productId: product.id } });
-    if (existingImages === 0) {
-      await db.productImage.createMany({
-        data: [
-          { productId: product.id, url: `/products/${image}.webp`, alt: `Al Jamal ${p.name} — pure desi ghee jar`, sortOrder: 0 },
-          { productId: product.id, url: `/products/${image}-detail.webp`, alt: `Close-up of the grainy golden texture of Al Jamal ${p.name}`, sortOrder: 1 },
-        ],
-      });
-    }
-    console.log(`Product ready: ${p.name}`);
+    await db.productImage.createMany({
+      data: [
+        { productId: product.id, url: `/products/${image}.webp`, alt: `Al Jamal ${p.name} — pure desi ghee jar`, sortOrder: 0 },
+        { productId: product.id, url: `/products/${image}-detail.webp`, alt: `Close-up of the grainy golden texture of Al Jamal ${p.name}`, sortOrder: 1 },
+      ],
+    });
+    console.log(`Product created: ${p.name}`);
   }
 }
 

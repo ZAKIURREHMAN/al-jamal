@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatDateTime, ORDER_STATUS_CLASS, ORDER_STATUS_LABEL } from "@/lib/utils";
 import { OrderStatusForm } from "@/components/admin/order-status-form";
 import { DeleteOrderButton } from "@/components/admin/delete-order-button";
+import { OrderEditForm } from "@/components/admin/order-edit-form";
+import { Printer } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,7 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/order
       <PageHeader
         title={order.orderNumber}
         description={`Placed ${formatDateTime(order.createdAt)} · Cash on Delivery`}
-        action={<Badge className={`${ORDER_STATUS_CLASS[order.status]} px-3 py-1.5 text-sm`}>{ORDER_STATUS_LABEL[order.status]}</Badge>}
+        action={<div className="flex items-center gap-3"><Link href={`/admin/orders/${order.id}/invoice`} className="inline-flex h-9 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-green-deep ring-1 ring-line hover:ring-green"><Printer className="h-4 w-4" /> Invoice</Link><Badge className={`${ORDER_STATUS_CLASS[order.status]} px-3 py-1.5 text-sm`}>{ORDER_STATUS_LABEL[order.status]}</Badge></div>}
       />
 
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
@@ -83,6 +85,9 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/order
             <h2 className="text-lg font-bold text-green-deep">Delivery address</h2>
             <address className="mt-2 text-sm not-italic leading-relaxed text-ink">{order.addressLine}<br />{order.city}</address>
             {order.notes && <p className="mt-3 rounded-xl bg-gold-soft px-3 py-2 text-sm text-charcoal"><span className="font-semibold">Notes:</span> {order.notes}</p>}
+            {order.status !== "DELIVERED" && order.status !== "CANCELLED" && (
+              <OrderEditForm orderId={order.id} initial={{ fullName: order.fullName, phone: order.phone, addressLine: order.addressLine, city: order.city, notes: order.notes ?? "" }} />
+            )}
           </Card>
           <Card className="ring-red-200">
             <h2 className="text-lg font-bold text-red-700">Danger zone</h2>

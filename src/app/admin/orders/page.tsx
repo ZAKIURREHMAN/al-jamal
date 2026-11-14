@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input, Select } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { formatDateTime, ORDER_STATUS_CLASS, ORDER_STATUS_LABEL } from "@/lib/utils";
+import { AutoRefresh } from "@/components/admin/auto-refresh";
+import { ExportCsvLink } from "@/components/admin/export-csv-link";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +29,8 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
 
   return (
     <>
-      <PageHeader title="Orders" description={`${result.total} order${result.total === 1 ? "" : "s"}`} />
+      <AutoRefresh seconds={60} />
+      <PageHeader title="Orders" description={`${result.total} order${result.total === 1 ? "" : "s"}`} action={<ExportCsvLink />} />
       <form className="mb-5 grid gap-3 rounded-3xl bg-white p-4 ring-1 ring-line/60 sm:grid-cols-[1fr_200px_auto]" method="get">
         <Input name="q" defaultValue={query.q ?? ""} placeholder="Search order no., name, phone or city" aria-label="Search orders" />
         <Select name="status" defaultValue={query.status ?? ""} aria-label="Filter by status">

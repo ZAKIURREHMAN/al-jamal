@@ -11,10 +11,6 @@ export function Story() {
           <div className="relative aspect-[4/5] overflow-hidden rounded-[2.5rem] shadow-soft">
             <Image src="/story.webp" alt="Al Jamal desi ghee jars with fresh ingredients" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
           </div>
-          <div className="absolute -bottom-6 -right-4 rounded-2xl bg-green px-5 py-4 text-white shadow-soft sm:right-6">
-            <p className="font-display text-3xl font-bold text-gold">3 days</p>
-            <p className="text-xs uppercase tracking-widest text-white/80">from milk to jar</p>
-          </div>
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-deep">Our Story</p>

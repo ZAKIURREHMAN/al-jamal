@@ -16,6 +16,10 @@ COPY . .
 # Prisma client is generated into src/generated (gitignored), so generate it here
 RUN npx prisma generate
 # Build-time placeholders; real values come from the environment at runtime
+ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ARG NEXT_PUBLIC_GA_ID=""
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_GA_ID=$NEXT_PUBLIC_GA_ID
 ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 ENV AUTH_SECRET="build-time-placeholder-secret-not-used-at-runtime-0000"
 RUN npm run build
@@ -35,6 +39,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
+# Pakistan time for logs and any server-side date handling
+RUN apk add --no-cache tzdata
+ENV TZ=Asia/Karachi
+ENV UPLOAD_DIR=/app/uploads-data
+
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
 # Standalone server + static assets
@@ -48,7 +57,7 @@ COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/generated ./src/generated
 COPY --from=tools /tools/node_modules ./node_modules
 COPY --chown=nextjs:nodejs docker/entrypoint.sh ./entrypoint.sh
-RUN chmod +x ./entrypoint.sh && mkdir -p ./public/uploads && chown -R nextjs:nodejs ./public/uploads
+RUN chmod +x ./entrypoint.sh && mkdir -p ./uploads-data && chown -R nextjs:nodejs ./uploads-data
 
 USER nextjs
 EXPOSE 3000

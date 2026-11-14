@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { listManualSales } from "@/lib/manual-sales";
 import { formatPKR } from "@/lib/money";
@@ -6,10 +7,11 @@ import { ManualSalesManager } from "@/components/admin/manual-sales-manager";
 
 export const dynamic = "force-dynamic";
 
-export default async function ManualSalesPage() {
-  const [{ sales, totalCents, count }, products] = await Promise.all([
-    listManualSales(),
-    db.product.findMany({ select: { id: true, name: true }, orderBy: { sortOrder: "asc" } }),
+export default async function ManualSalesPage({ searchParams }: PageProps<"/admin/sales">) {
+  const page = Math.max(1, Number((await searchParams).page) || 1);
+  const [{ sales, totalCents, count, pages }, products] = await Promise.all([
+    listManualSales(page),
+    db.product.findMany({ select: { id: true, name: true, variants: { select: { id: true, label: true, stock: true }, orderBy: { sortOrder: "asc" } } }, orderBy: { sortOrder: "asc" } }),
   ]);
   return (
     <>
@@ -20,8 +22,15 @@ export default async function ManualSalesPage() {
       </div>
       <ManualSalesManager
         products={products}
-        sales={sales.map((s) => ({ id: s.id, amountCents: s.amountCents, description: s.description, customerName: s.customerName, productName: s.product?.name ?? null, quantity: s.quantity, soldAt: s.soldAt.toISOString(), enteredBy: s.createdBy?.name ?? null }))}
+        sales={sales.map((s) => ({ id: s.id, amountCents: s.amountCents, description: s.description, customerName: s.customerName, productName: s.product ? `${s.product.name}${s.variant ? ` (${s.variant.label})` : ""}` : null, quantity: s.quantity, stockDeducted: s.stockDeducted, soldAt: s.soldAt.toISOString(), enteredBy: s.createdBy?.name ?? null }))}
       />
+      {pages > 1 && (
+        <nav className="mt-4 flex items-center justify-between text-sm" aria-label="Pagination">
+          <Link className={page <= 1 ? "pointer-events-none opacity-40" : "font-medium text-green-deep hover:underline"} href={`/admin/sales?page=${page - 1}`}>← Newer</Link>
+          <span className="text-muted">Page {page} of {pages}</span>
+          <Link className={page >= pages ? "pointer-events-none opacity-40" : "font-medium text-green-deep hover:underline"} href={`/admin/sales?page=${page + 1}`}>Older →</Link>
+        </nav>
+      )}
     </>
   );
 }

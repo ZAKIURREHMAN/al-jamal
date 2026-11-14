@@ -2,6 +2,8 @@ import { handle, ok, readJson } from "@/lib/api";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { reviewInputSchema } from "@/lib/validation";
+import { audit } from "@/lib/audit";
+import { invalidate } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -29,5 +31,7 @@ export const POST = handle(async (req: Request) => {
       reviewedById: session.sub,
     },
   });
+  invalidate("reviews");
+  await audit(session, "create", "review", review.id, `Added review from ${input.customerName} (${input.rating}★, ${input.isApproved ? "published" : "hidden"})`);
   return ok(review, { status: 201 });
 });

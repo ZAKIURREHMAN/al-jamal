@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/container";
-import { ProductGrid } from "@/components/store/product-grid";
+import { ProductBrowser } from "@/components/store/product-browser";
 import { listPublicProducts } from "@/lib/products";
 import { JsonLd, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 import Link from "next/link";
@@ -24,7 +24,7 @@ export default async function ProductsPage() {
           <p className="mt-4 text-lg text-ink">Every jar of Al Jamal desi ghee is made from cultured butter and slow-cooked in small batches in Lahore. Choose pure cow ghee for everyday cooking, buffalo ghee for richer dishes, or hand-churned bilona ghee. Pick a weight, add to cart, and pay cash on delivery anywhere in Pakistan.</p>
         </div>
         <div className="mt-12">
-          <ProductGrid products={products} priorityCount={4} />
+          <ProductBrowser products={products} />
         </div>
         <div className="mt-14 max-w-3xl space-y-4 text-ink">
           <h2 className="text-2xl font-bold text-green-deep">Which desi ghee should you choose?</h2>

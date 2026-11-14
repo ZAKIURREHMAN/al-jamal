@@ -62,7 +62,7 @@ Validate after deploy with https://search.google.com/test/rich-results and https
 
 ## 5. External actions required (cannot be done in code)
 
-1. **Production domain.** Set `NEXT_PUBLIC_SITE_URL=https://<your-domain>` in the production environment. Decide www vs non-www and redirect the other at the DNS/host level (301). Without this, canonicals, sitemap and Open Graph URLs point to localhost.
+1. **Production domain — done in code.** `NEXT_PUBLIC_SITE_URL` is `https://al-jamal.shop`; canonicals, sitemap, robots and Open Graph use it, and `www.al-jamal.shop` redirects permanently to the bare domain. Remaining: point the DNS A records at the server and start with `docker compose --profile prod up -d --build`.
 2. **Google Search Console.** Add the property, put the verification token in `GOOGLE_SITE_VERIFICATION`, submit `/sitemap.xml`, and check Coverage and Enhancements (Products, FAQs, Breadcrumbs).
 3. **Google Analytics 4.** Create a property, set `NEXT_PUBLIC_GA_ID=G-XXXXXXX`. Mark "purchase" as a key event by sending an event from the order confirmation page once GA is live (see `src/app/(store)/order/[orderNumber]/page.tsx`).
 4. **Google Business Profile.** Eligible if orders are fulfilled from a Lahore address (a delivery-area business can hide its street address). Use the exact name "Al Jamal Desi Ghee", phone +92 303 7055259, category "Dairy store" or "Food products supplier", service area Lahore, and link to the Lahore page.

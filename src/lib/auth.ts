@@ -1,20 +1,10 @@
-import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { ApiError } from "./api";
+import { db } from "./db";
+import { SESSION_COOKIE, verifySessionToken, type SessionPayload } from "./session-token";
 
-export const SESSION_COOKIE = "aj_admin_session";
-const SESSION_TTL_SEC = 60 * 60 * 12; // 12 hours
-
-export type SessionPayload = { sub: string; email: string; name: string; role: "ADMIN" | "STAFF" };
-
-function secret(): Uint8Array {
-  const s = process.env.AUTH_SECRET;
-  if (!s || s.length < 32) {
-    throw new Error("AUTH_SECRET must be set to at least 32 characters");
-  }
-  return new TextEncoder().encode(s);
-}
+export { SESSION_COOKIE, createSessionToken, verifySessionToken, sessionCookieOptions, type SessionPayload } from "./session-token";
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
@@ -24,51 +14,32 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
-export async function createSessionToken(payload: SessionPayload): Promise<string> {
-  return new SignJWT({ email: payload.email, name: payload.name, role: payload.role })
-    .setProtectedHeader({ alg: "HS256" })
-    .setSubject(payload.sub)
-    .setIssuedAt()
-    .setExpirationTime(`${SESSION_TTL_SEC}s`)
-    .sign(secret());
-}
-
-export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
-  try {
-    const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });
-    if (!payload.sub || typeof payload.email !== "string") return null;
-    return {
-      sub: payload.sub,
-      email: payload.email,
-      name: String(payload.name ?? ""),
-      role: payload.role === "STAFF" ? "STAFF" : "ADMIN",
-    };
-  } catch {
-    return null;
-  }
-}
-
-export function sessionCookieOptions() {
-  return {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: SESSION_TTL_SEC,
-  };
-}
-
-/** Read the current admin session from cookies (server components / route handlers). */
+/**
+ * Read the current admin session from cookies and confirm it against the database:
+ * the user must still exist, be active, and the token must match the user's current session version
+ * (so "sign out everywhere", a password change or deactivation takes effect immediately).
+ */
 export async function getSession(): Promise<SessionPayload | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  return verifySessionToken(token);
+  const payload = await verifySessionToken(token);
+  if (!payload) return null;
+  const user = await db.user.findUnique({ where: { id: payload.sub }, select: { isActive: true, tokenVersion: true, email: true, name: true, role: true } });
+  if (!user || !user.isActive || user.tokenVersion !== payload.ver) return null;
+  return { ...payload, email: user.email, name: user.name, role: user.role };
 }
 
-/** Throw a 401 unless an admin session is present. Use at the top of every admin API handler. */
+/** Throw a 401 unless a valid admin session is present. Use at the top of every admin API handler. */
 export async function requireAdmin(): Promise<SessionPayload> {
   const session = await getSession();
   if (!session) throw new ApiError(401, "Authentication required");
+  return session;
+}
+
+/** Throw a 403 unless the session belongs to a full administrator (not staff). */
+export async function requireOwner(): Promise<SessionPayload> {
+  const session = await requireAdmin();
+  if (session.role !== "ADMIN") throw new ApiError(403, "Only an administrator can do this");
   return session;
 }

@@ -46,7 +46,9 @@ next-env.d.ts
 src/generated/
 
 # uploaded product images
-public/uploads/*
-!public/uploads/.gitkeep
+uploads-data/
 
 !.env.docker.example
+
+# database backups
+backups/

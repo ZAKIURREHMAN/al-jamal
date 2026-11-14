@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { storeConfig } from "./config";
+import type { StoreSettings } from "./settings";
 
 /**
  * Central SEO helpers. The production domain is read from NEXT_PUBLIC_SITE_URL and is never hard-coded;
@@ -69,7 +70,7 @@ export function pageMetadata(opts: {
 
 // ---------- JSON-LD builders (all values mirror what is visible on the page) ----------
 
-export function organizationJsonLd() {
+export function organizationJsonLd(s: StoreSettings) {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -80,15 +81,15 @@ export function organizationJsonLd() {
     logo: absoluteUrl("/brand/wordmark.png"),
     image: absoluteUrl("/og.png"),
     description: SEO.defaultDescription,
-    telephone: storeConfig.contact.phone,
-    email: storeConfig.contact.email,
+    telephone: s.phone,
+    email: s.email,
     address: { "@type": "PostalAddress", addressLocality: SEO.city, addressRegion: SEO.region, addressCountry: "PK" },
     areaServed: [
       { "@type": "City", name: "Lahore" },
       { "@type": "Country", name: "Pakistan" },
     ],
-    contactPoint: [{ "@type": "ContactPoint", telephone: storeConfig.contact.phone, contactType: "customer service", areaServed: "PK", availableLanguage: ["en", "ur"] }],
-    sameAs: [storeConfig.social.facebook],
+    contactPoint: [{ "@type": "ContactPoint", telephone: s.phone, contactType: "customer service", areaServed: "PK", availableLanguage: ["en", "ur"] }],
+    sameAs: [s.facebook, s.instagram].filter(Boolean),
   };
 }
 

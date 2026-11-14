@@ -1,39 +1,36 @@
+import { db } from "./db";
+
 /**
- * Simple in-memory sliding window rate limiter.
- * Suitable for a single-instance deployment; swap for Redis/Upstash when scaling horizontally.
+ * Database-backed sliding-window rate limiter. Limits survive restarts and are shared by every app instance.
  */
-type Bucket = { timestamps: number[] };
-const buckets = new Map<string, Bucket>();
-
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
-let lastCleanup = Date.now();
-
-function cleanup(windowMs: number) {
-  const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
-  lastCleanup = now;
-  for (const [key, bucket] of buckets) {
-    bucket.timestamps = bucket.timestamps.filter((t) => now - t < windowMs);
-    if (bucket.timestamps.length === 0) buckets.delete(key);
+export async function rateLimit(key: string, limit: number, windowMs: number): Promise<{ ok: boolean; retryAfterSec: number }> {
+  const since = new Date(Date.now() - windowMs);
+  const hits = await db.rateLimitHit.findMany({ where: { key, createdAt: { gte: since } }, orderBy: { createdAt: "asc" }, select: { createdAt: true }, take: limit });
+  if (hits.length >= limit) {
+    const oldest = hits[0].createdAt.getTime();
+    return { ok: false, retryAfterSec: Math.max(1, Math.ceil((oldest + windowMs - Date.now()) / 1000)) };
   }
-}
-
-export function rateLimit(key: string, limit: number, windowMs: number): { ok: boolean; retryAfterSec: number } {
-  cleanup(windowMs);
-  const now = Date.now();
-  const bucket = buckets.get(key) ?? { timestamps: [] };
-  bucket.timestamps = bucket.timestamps.filter((t) => now - t < windowMs);
-  if (bucket.timestamps.length >= limit) {
-    const oldest = bucket.timestamps[0];
-    return { ok: false, retryAfterSec: Math.ceil((windowMs - (now - oldest)) / 1000) };
+  await db.rateLimitHit.create({ data: { key } });
+  // Opportunistic cleanup of expired rows (about 1 in 50 calls)
+  if (Math.random() < 0.02) {
+    db.rateLimitHit.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } } }).catch(() => {});
   }
-  bucket.timestamps.push(now);
-  buckets.set(key, bucket);
   return { ok: true, retryAfterSec: 0 };
 }
 
+/**
+ * Client IP for rate limiting. The right-most X-Forwarded-For entry is the one appended by the nearest
+ * proxy (Caddy in production), so a client cannot spoof it by sending its own header.
+ */
+export function clientIpFrom(headers: Headers): string {
+  const fwd = headers.get("x-forwarded-for");
+  if (fwd) {
+    const parts = fwd.split(",").map((p) => p.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1];
+  }
+  return headers.get("x-real-ip") ?? "unknown";
+}
+
 export function clientIp(req: Request): string {
-  const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0].trim();
-  return req.headers.get("x-real-ip") ?? "unknown";
+  return clientIpFrom(req.headers);
 }

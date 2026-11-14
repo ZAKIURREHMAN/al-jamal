@@ -3,6 +3,7 @@ import { ApiError } from "./api";
 import { rupeesToCents } from "./money";
 import type { ProductInput } from "./validation";
 import { Prisma } from "@/generated/prisma/client";
+import { invalidate } from "./cache";
 
 export const adminProductInclude = {
   variants: { orderBy: { sortOrder: "asc" as const } },
@@ -119,4 +120,5 @@ export async function updateProduct(id: string, input: ProductInput) {
 export async function deleteProduct(id: string) {
   await getAdminProduct(id);
   await db.product.delete({ where: { id } });
+  invalidate("products", "reviews");
 }

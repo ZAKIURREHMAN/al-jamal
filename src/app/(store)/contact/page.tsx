@@ -1,7 +1,8 @@
-import { Mail, MapPin, MessageCircle, Phone, Clock } from "lucide-react";
+import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { JsonLd, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
-import { storeConfig } from "@/lib/config";
+import { getSettings } from "@/lib/settings";
+import { ContactForm } from "@/components/store/contact-form";
 
 export const metadata = pageMetadata({
   title: "Contact Al Jamal Desi Ghee | Lahore",
@@ -9,8 +10,8 @@ export const metadata = pageMetadata({
   path: "/contact",
 });
 
-export default function ContactPage() {
-  const c = storeConfig.contact;
+export default async function ContactPage() {
+  const c = await getSettings();
   return (
     <>
       <section className="bg-paper py-14 sm:py-20">
@@ -42,10 +43,9 @@ export default function ContactPage() {
             </div>
           </div>
 
-          <div className="mt-8 flex items-start gap-3 rounded-3xl bg-white p-6 ring-1 ring-line/60 text-ink">
-            <Clock className="mt-0.5 h-5 w-5 shrink-0 text-green" />
-            <p>We reply on WhatsApp and phone between 9am and 9pm, seven days a week. Orders placed on the website are confirmed by phone, usually the same day.</p>
-          </div>
+          <h2 className="mt-12 text-2xl font-bold text-green-deep">Send us a message</h2>
+          <p className="mt-2 text-ink">Prefer to write? Leave your number and we&apos;ll get back to you.</p>
+          <div className="mt-5"><ContactForm /></div>
         </Container>
       </section>
       <JsonLd data={breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Contact", path: "/contact" }])} />

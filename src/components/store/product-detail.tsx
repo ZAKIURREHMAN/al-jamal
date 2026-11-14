@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Minus, Plus, ShoppingBag, Truck, ShieldCheck, Banknote } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Minus, Plus, ShoppingBag, Truck, ShieldCheck, Banknote, Zap, BellRing } from "lucide-react";
 import type { PublicProduct } from "@/lib/products";
 import { Price } from "./price";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -12,10 +13,17 @@ import { useCart, MAX_PER_LINE } from "@/store/cart";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { formatPKR } from "@/lib/money";
+import { useUi } from "@/store/ui";
+import type { DeliveryRates } from "@/lib/delivery";
 
-export function ProductDetail({ product, deliveryCents, freeThresholdCents }: { product: PublicProduct; deliveryCents: number; freeThresholdCents: number }) {
+export function ProductDetail({ product, rates, whatsapp }: { product: PublicProduct; rates: DeliveryRates; whatsapp: string }) {
+  const router = useRouter();
+  const params = useSearchParams();
+  const openCart = useUi((s) => s.openCart);
   const firstAvailable = product.variants.find((v) => v.inStock) ?? product.variants[0];
-  const [variantId, setVariantId] = useState(firstAvailable?.id);
+  // A link such as /products/cow-ghee?weight=1kg opens with that weight selected.
+  const fromUrl = product.variants.find((v) => v.label.toLowerCase() === (params.get("weight") ?? "").toLowerCase());
+  const [variantId, setVariantId] = useState((fromUrl ?? firstAvailable)?.id);
   const [imageIdx, setImageIdx] = useState(0);
   const [qty, setQty] = useState(1);
   const variant = product.variants.find((v) => v.id === variantId) ?? firstAvailable;
@@ -25,7 +33,7 @@ export function ProductDetail({ product, deliveryCents, freeThresholdCents }: { 
   const maxQty = variant ? Math.min(variant.stock, MAX_PER_LINE) : 1;
 
   function handleAdd() {
-    if (!variant?.inStock) return;
+    if (!variant?.inStock) return false;
     const res = add(
       {
         variantId: variant.id,
@@ -39,9 +47,24 @@ export function ProductDetail({ product, deliveryCents, freeThresholdCents }: { 
       },
       qty,
     );
-    if (res.ok) toast(`${qty} × ${product.name} (${variant.label}) added to your cart.`);
+    if (res.ok) openCart();
     else toast(res.message ?? "Could not add to cart", "error");
+    return res.ok;
   }
+
+  function handleBuyNow() {
+    if (handleAdd()) router.push("/checkout");
+  }
+
+  function selectVariant(id: string, label: string) {
+    setVariantId(id);
+    setQty(1);
+    // Keep the chosen weight in the URL so the page can be shared or bookmarked.
+    const url = new URL(window.location.href);
+    url.searchParams.set("weight", label);
+    window.history.replaceState(null, "", url);
+  }
+
 
   return (
     <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
@@ -103,7 +126,7 @@ export function ProductDetail({ product, deliveryCents, freeThresholdCents }: { 
               <button
                 key={v.id}
                 type="button"
-                onClick={() => { setVariantId(v.id); setQty(1); }}
+                onClick={() => selectVariant(v.id, v.label)}
                 disabled={!v.inStock}
                 aria-pressed={v.id === variant?.id}
                 className={cn(
@@ -125,15 +148,29 @@ export function ProductDetail({ product, deliveryCents, freeThresholdCents }: { 
             <span className="w-10 text-center font-semibold tabular-nums" aria-live="polite">{qty}</span>
             <button type="button" aria-label="Increase quantity" onClick={() => setQty((q) => Math.min(maxQty, q + 1))} disabled={qty >= maxQty} className="flex h-12 w-12 items-center justify-center rounded-full text-green-deep hover:bg-green-soft disabled:opacity-40"><Plus className="h-4 w-4" /></button>
           </div>
-          <Button size="lg" onClick={handleAdd} disabled={!variant?.inStock} className="flex-1">
+          <Button size="lg" onClick={() => { handleAdd(); }} disabled={!variant?.inStock} className="flex-1">
             <ShoppingBag className="h-5 w-5" /> Add to Cart{variant ? ` · ${formatPKR(variant.priceCents * qty)}` : ""}
           </Button>
         </div>
-        <ButtonLink href="/cart" variant="ghost" className="mt-3 w-full sm:w-auto">View cart →</ButtonLink>
+        {variant?.inStock ? (
+          <Button size="lg" variant="gold" onClick={handleBuyNow} className="mt-3 w-full">
+            <Zap className="h-5 w-5" /> Buy Now — Cash on Delivery
+          </Button>
+        ) : (
+          <a
+            href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`Assalam o Alaikum, please let me know when ${product.name}${variant ? ` (${variant.label})` : ""} is back in stock.`)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex h-13 w-full items-center justify-center gap-2 rounded-full bg-white px-8 text-base font-semibold text-green-deep ring-1 ring-line transition hover:ring-green"
+          >
+            <BellRing className="h-5 w-5" /> Notify me on WhatsApp when it&apos;s back
+          </a>
+        )}
+        <ButtonLink href="/cart" variant="ghost" className="mt-2 w-full sm:w-auto">View cart →</ButtonLink>
 
         <ul className="mt-8 grid gap-3 rounded-3xl bg-white p-5 text-sm text-ink ring-1 ring-line/60 sm:grid-cols-3">
           <li className="flex items-center gap-2.5"><Banknote className="h-5 w-5 shrink-0 text-green" /> Cash on delivery</li>
-          <li className="flex items-center gap-2.5"><Truck className="h-5 w-5 shrink-0 text-green" /> {freeThresholdCents > 0 ? `Free delivery over ${formatPKR(freeThresholdCents)}` : `Delivery ${formatPKR(deliveryCents)}`}</li>
+          <li className="flex items-center gap-2.5"><Truck className="h-5 w-5 shrink-0 text-green" /> {rates.freeThreshold > 0 ? `Free delivery over ${formatPKR(rates.freeThreshold * 100)}` : `Delivery from ${formatPKR(Math.min(rates.lahore, rates.other) * 100)}`}</li>
           <li className="flex items-center gap-2.5"><ShieldCheck className="h-5 w-5 shrink-0 text-green" /> Sealed fresh</li>
         </ul>
 
