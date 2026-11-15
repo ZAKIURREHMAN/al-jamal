@@ -8,7 +8,7 @@
  * Output (public/brand/label/): al-jamal-label-<size>.svg / .png (300 dpi, with 3 mm bleed) / .pdf, plus an overview sheet.
  * Run: npx tsx scripts/generate-jar-label.ts
  */
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
@@ -271,7 +271,7 @@ async function main() {
   // Overview sheet: all four labels at the same scale, so relative sizes are visible.
   const k = 0.42, pad = 90, gap = 150;
   const W = Math.round(Math.max(...sheet.map((s) => s.pxW)) * k) + pad * 2;
-  let y = pad + 40; const comps: sharp.OverlayOptions[] = []; let captions = "";
+  let y = pad + 40; const comps: OverlayOptions[] = []; let captions = "";
   for (const s of sheet) {
     const w = Math.round(s.pxW * k), h = Math.round(s.pxH * k);
     comps.push({ input: await sharp(s.file).resize({ width: w }).png().toBuffer(), left: Math.round((W - w) / 2), top: y });
